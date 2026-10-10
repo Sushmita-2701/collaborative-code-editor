@@ -1,0 +1,45 @@
+services:
+  mongodb:
+    image: mongo:8.0
+    container_name: collaborative_mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=collaborative_editor
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: collaborative_server
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - MONGODB_URI=${MONGODB_URI}
+      - JWT_SECRET=${JWT_SECRET}
+      - CLIENT_URL=http://localhost:5173
+      - WS_URL=ws://localhost:5000
+    depends_on:
+      - mongodb
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: collaborative_client
+    restart: always
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:5000/api
+      - VITE_WS_URL=ws://localhost:5000
+    depends_on:
+      - server
+
+volumes:
+  mongo_data:
